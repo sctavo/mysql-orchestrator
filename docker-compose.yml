@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  db1:
+    image: mysql:8.0
+    container_name: db1
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+    command: ["mysqld"]
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./config/db1/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./init/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - db1-data:/var/lib/mysql
+    networks:
+      - dbnet
+
+  db2:
+    image: mysql:8.0
+    container_name: db2
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+    command: ["mysqld"]
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./config/db2/my.cnf:/etc/mysql/conf.d/my.cnf
+      - db2-data:/var/lib/mysql
+    depends_on:
+      - db1
+    networks:
+      - dbnet
+
+  db3:
+    image: mysql:8.0
+    container_name: db3
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+    command: ["mysqld"]
+    ports:
+      - "3309:3306"
+    volumes:
+      - ./config/db3/my.cnf:/etc/mysql/conf.d/my.cnf
+      - db3-data:/var/lib/mysql
+    depends_on:
+      - db1
+    networks:
+      - dbnet
+
+  orchestrator:
+    image: openarkcode/orchestrator:latest
+    container_name: orchestrator
+    ports:
+      - "3000:3000"   # Web UI
+    environment:
+      # Usuario que usará Orchestrator para conectarse a las instancias MySQL
+      ORC_TOPOLOGY_USER: "orc_user"
+      ORC_TOPOLOGY_PASSWORD: "orc_pass"
+      # Backend por defecto (SQLite) es suficiente para el laboratorio
+    depends_on:
+      - db1
+      - db2
+      - db3
+    networks:
+      - dbnet
+
+networks:
+  dbnet:
+    driver: bridge
+
+volumes:
+  db1-data:
+  db2-data:
+  db3-data:
